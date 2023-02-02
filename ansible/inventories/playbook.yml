@@ -1,0 +1,93 @@
+- hosts: all
+  gather_facts: false
+  become: yes
+
+# Install Docker
+  tasks:
+  - name: Clean packages
+    command:
+      cmd: dnf clean -y packages
+
+  - name: Install device-mapper-persistent-data
+    dnf:
+      name: device-mapper-persistent-data
+      state: latest
+
+  - name: Install lvm2
+    dnf:
+      name: lvm2
+      state: latest
+
+  - name: add repo docker
+    command:
+      cmd: sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+
+  - name: Install Docker
+    dnf:
+      name: docker-ce
+      state: present
+
+  - name: install python3
+    dnf:
+      name: python3
+
+  - name: Pip install
+    pip:
+      name: docker
+
+  - name: Make sure Docker is running
+    service: name=docker state=started
+    tags: docker
+  
+  - name: Create Docker network
+    docker_network:
+        name: app-network
+        driver: bridge
+        state: present
+
+  - name: Start BDD
+    docker_container:
+        name: bdd_pg
+        image: awel899/web_db:1.0
+        env:
+          POSTGRES_DB: db
+          POSTGRES_USER: usr
+          POSTGRES_PASSWORD: pwd
+        ports:
+        - 5432:5432
+        networks:
+        - name: app-network
+        state: started
+        volumes:
+        - /my/own/datadir:/var/lib/postgresql/data
+  - name: Start backend
+    docker_container:
+        name: my-java-api
+        image: awel899/web_backend:1.0
+        ports:
+        - 8080:8080
+        networks:
+        - name: app-network
+        state: started
+  - name: http_front run
+    docker_container:
+        name: http_front
+        image: awel899/web_httpd:4.0
+        ports:
+        - 80:80
+        networks:
+        - name: app-network
+        state: started
+        links:
+        - my-java-api:my-java-api
+  - name: devops-front run
+    docker_container:
+        name: devops-front
+        image: awel899/front:4.0
+        ports:
+        - 82:82
+        networks:
+        - name: app-network
+        state: started
+        links:
+        - http_front:http_front

@@ -1,9 +1,12 @@
-all:
- vars:
-   ansible_user: centos
-   ansible_ssh_private_key_file: ../../id_rsa
-   docker_username: mquelennec
-   docker_password: wzyRzZ5169780
- children:
-   prod:
-     hosts: morgane.quelennec.takima.cloud
+# Fichier de configuration Ansible
+
+# Définition des variables pour la connexion SSH
+vars:
+  ansible_user: centos
+  ansible_ssh_private_key_file: ../../id_rsa
+
+# Définition d'un enfant de type "prod"
+children:
+  prod:
+    # Définition de l'hôte cible pour les tâches d'Ansible
+    hosts: morgane.quelennec.takima.cloud
